@@ -1,0 +1,141 @@
+"""ReelRelay — festival & distribution strategy agent pipeline.
+
+Four LlmAgents run in sequence, passing work through session state:
+intake → scout → strategist → pitch. `root_agent` is the entry point that
+`adk run`, `adk web`, and cli.py all use.
+"""
+
+import os
+
+from google.adk.agents import LlmAgent, SequentialAgent
+from google.adk.agents.callback_context import CallbackContext
+
+from .strategy import build_plan, loads_loose
+from .tools import parallel_search
+
+MODEL = os.environ.get("REELRELAY_MODEL", "gemini-2.5-flash")
+
+
+def compute_plan(callback_context: CallbackContext) -> None:
+    """Build the submission plan in Python before the strategist speaks.
+
+    Budget math, tier balance, and premiere sequencing are decisions a model
+    should not improvise. The strategist receives the finished plan as grounded
+    facts and explains the reasoning behind it.
+    """
+    state = callback_context.state
+    profile = loads_loose(state.get("film_profile")) or {}
+    research = loads_loose(state.get("festival_research"))
+
+    if not isinstance(research, list) or not research:
+        state["computed_plan"] = (
+            "No machine-readable festival candidates were produced by the scout. "
+            "Explain this to the filmmaker and recommend re-running the research "
+            "with broader queries. Do not invent festivals."
+        )
+        return
+
+    try:
+        state["computed_plan"] = build_plan(profile, research).to_markdown()
+    except Exception as exc:
+        state["computed_plan"] = (
+            f"The deterministic planner failed ({exc}). Tell the filmmaker the "
+            "plan could not be computed rather than estimating one yourself."
+        )
+
+intake_agent = LlmAgent(
+    name="intake",
+    model=MODEL,
+    description="Normalizes a filmmaker's raw description into a film profile.",
+    instruction="""You are the intake coordinator for ReelRelay, a festival
+strategy service for independent filmmakers.
+
+The user message describes their film (possibly as JSON, possibly free text).
+Produce a normalized FILM PROFILE as compact JSON with exactly these keys:
+title, logline, genre, subgenres, runtime_minutes, premiere_status
+(world/national/regional/none-remaining), completion_date, country,
+languages, budget_for_submissions_usd, themes (list), comparable_films (list),
+target_outcome (e.g. "sales agent", "streaming deal", "career visibility").
+
+Infer conservatively; use null for anything truly unknown. Output ONLY the
+JSON object, no commentary.""",
+    output_key="film_profile",
+)
+
+scout_agent = LlmAgent(
+    name="scout",
+    model=MODEL,
+    description="Researches currently-open festivals that fit the film, using live web search.",
+    instruction="""You are a film-festival researcher. Here is the film profile:
+
+{film_profile}
+
+Use the parallel_search tool (2-4 calls, each with a focused objective and
+2-5 queries) to research festivals that fit this film RIGHT NOW:
+- currently open or upcoming submission windows and their deadlines/fees
+- genre and theme fit (recent lineups, programmer interviews, festival focus)
+- a spread of tiers: top-tier, respected mid-tier, and niche/genre festivals
+
+Then output a JSON list of 12-20 festival candidates, each with: name, tier
+(top/mid/niche), submission_deadline, fee_usd, fit_reason (one sentence citing
+what you found), premiere_requirement, source_url. Only include festivals you
+found evidence for in search results — never invent deadlines or fees. If a
+field is unverified, set it to null. Output ONLY the JSON list.""",
+    tools=[parallel_search],
+    output_key="festival_research",
+)
+
+strategist_agent = LlmAgent(
+    name="strategist",
+    model=MODEL,
+    description="Explains the computed, budget-bounded submission plan to the filmmaker.",
+    instruction="""You are a festival strategist (the kind filmmakers pay
+$1,500-5,000). Film profile:
+
+{film_profile}
+
+A deterministic planner has already selected the slate — tier balance, budget
+math, premiere sequencing, and deadline ordering are settled:
+
+{computed_plan}
+
+Present this plan to the filmmaker:
+1. Open with 5-8 sentences of strategy rationale they can act on — why this
+   shape of slate, what the premiere sequencing protects, what the urgent
+   deadlines demand this month.
+2. Reproduce the plan table EXACTLY as computed. Never add, drop, reprice, or
+   re-date a festival, and never recalculate the budget totals.
+3. Explain what was set aside and what they should manually verify.
+
+The numbers are authoritative; your job is judgment and clarity, not
+arithmetic.""",
+    before_agent_callback=compute_plan,
+    output_key="submission_plan",
+)
+
+pitch_agent = LlmAgent(
+    name="pitch",
+    model=MODEL,
+    description="Drafts a personalized cover letter for the top-priority festival.",
+    instruction="""You draft festival cover letters that programmers actually
+read. Film profile:
+
+{film_profile}
+
+Submission plan:
+
+{submission_plan}
+
+Write the cover letter for the SINGLE highest-priority upcoming submission in
+the plan: 150-220 words, specific to that festival (reference its focus or
+past programming from the research — no generic flattery), professional but
+warm, ending with a clear thank-you. Ground every claim in the film profile;
+invent nothing. Label it clearly with the festival name.""",
+    output_key="sample_pitch",
+)
+
+root_agent = SequentialAgent(
+    name="reelrelay",
+    description="ReelRelay: intake → live festival research → tiered submission strategy → sample pitch.",
+    sub_agents=[intake_agent, scout_agent, strategist_agent, pitch_agent],
+)

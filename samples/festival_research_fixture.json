@@ -1,0 +1,125 @@
+{
+  "_fixture_note": "SYNTHETIC TEST DATA — fictional festivals with invented deadlines and fees, used for offline development and deterministic tests (REELRELAY_OFFLINE=1). These are NOT real festivals and must never be shown as research results. Real runs get live data from the Parallel Search API.",
+  "results": [
+    {
+      "name": "Northern Lights Short Film Festival",
+      "tier": "top",
+      "submission_deadline": "2026-09-20",
+      "fee_usd": 65,
+      "fit_score": 0.92,
+      "fit_reason": "Programs elegiac shorts about vanishing crafts; bilingual EN/FR friendly",
+      "premiere_requirement": "world premiere",
+      "source_url": "https://example.invalid/northern-lights/submit"
+    },
+    {
+      "name": "Meridian International Film Week",
+      "tier": "top",
+      "submission_deadline": "2026-10-05",
+      "fee_usd": 70,
+      "fit_score": 0.81,
+      "fit_reason": "Strong magical-realism strand in recent short programs",
+      "premiere_requirement": "world premiere",
+      "source_url": "https://example.invalid/meridian/entry"
+    },
+    {
+      "name": "Harbourfront Documentary & Short Fest",
+      "tier": "mid",
+      "submission_deadline": "2026-08-12",
+      "fee_usd": 45,
+      "fit_score": 0.74,
+      "fit_reason": "Canadian-content priority; past winners include projection-booth portraits",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/harbourfront/submissions"
+    },
+    {
+      "name": "Cinema Vérité Shorts",
+      "tier": "mid",
+      "submission_deadline": "2026-11-14",
+      "fee_usd": 40,
+      "fit_score": 0.7,
+      "fit_reason": "Dedicated 'Films About Film' sidebar",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/cv-shorts/rules"
+    },
+    {
+      "name": "Rivermouth Film Festival",
+      "tier": "mid",
+      "submission_deadline": "2026-10-30",
+      "fee_usd": 50,
+      "fit_score": 0.66,
+      "fit_reason": "Mid-size regional fest, reliable programmer engagement with drama shorts",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/rivermouth/enter"
+    },
+    {
+      "name": "Ashgrove Independent Cinema Days",
+      "tier": "mid",
+      "submission_deadline": "2026-12-01",
+      "fee_usd": 38,
+      "fit_score": 0.63,
+      "fit_reason": "Hosted in a restored century-old cinema — thematic resonance",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/ashgrove/submit"
+    },
+    {
+      "name": "Lantern Micro-Shorts Showcase",
+      "tier": "niche",
+      "submission_deadline": "2026-09-08",
+      "fee_usd": 20,
+      "fit_score": 0.6,
+      "fit_reason": "Under-15-minute focus; low fee, high acceptance rate",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/lantern/apply"
+    },
+    {
+      "name": "Projectionist's Guild Screening Series",
+      "tier": "niche",
+      "submission_deadline": "2026-11-01",
+      "fee_usd": 15,
+      "fit_score": 0.88,
+      "fit_reason": "Audience is literally projectionists — near-perfect subject match",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/guild/screenings"
+    },
+    {
+      "name": "Bilingual Voices Short Competition",
+      "tier": "niche",
+      "submission_deadline": "2026-10-18",
+      "fee_usd": 25,
+      "fit_score": 0.72,
+      "fit_reason": "EN/FR bilingual films explicitly prioritized",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/bilingual-voices/entry"
+    },
+    {
+      "name": "Ghost Frame Genre Nights",
+      "tier": "niche",
+      "submission_deadline": "2026-09-25",
+      "fee_usd": 18,
+      "fit_score": 0.45,
+      "fit_reason": "Supernatural elements fit loosely; tone is more horror than elegy",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/ghostframe/submit"
+    },
+    {
+      "name": "Continental Grand Prix du Court",
+      "tier": "top",
+      "submission_deadline": null,
+      "fee_usd": 85,
+      "fit_score": 0.78,
+      "fit_reason": "Prestigious, but 2027 submission window not yet announced",
+      "premiere_requirement": "world premiere",
+      "source_url": "https://example.invalid/grandprix"
+    },
+    {
+      "name": "Old Mill Heritage Film Days",
+      "tier": "mid",
+      "submission_deadline": "2026-03-15",
+      "fee_usd": 35,
+      "fit_score": 0.69,
+      "fit_reason": "Excellent thematic fit but this cycle has closed",
+      "premiere_requirement": null,
+      "source_url": "https://example.invalid/oldmill/archive"
+    }
+  ]
+}
