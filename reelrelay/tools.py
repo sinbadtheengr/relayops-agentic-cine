@@ -29,6 +29,7 @@ def _offline_results() -> dict:
                 "url": r["source_url"],
                 "title": r["name"],
                 "excerpts": [json.dumps(r)],
+                "publish_date": None,  # shape parity with live results
             }
             for r in data["results"]
         ],
@@ -69,7 +70,14 @@ def parallel_search(objective: str, search_queries: list[str]) -> dict:
         return {
             "status": "ok",
             "results": [
-                {"url": r.url, "title": r.title, "excerpts": r.excerpts}
+                {
+                    "url": r.url,
+                    "title": r.title,
+                    "excerpts": r.excerpts,
+                    # Festival pages go stale between cycles; the scout needs to
+                    # see age to avoid citing last year's deadline as this year's.
+                    "publish_date": r.publish_date,
+                }
                 for r in search.results
             ],
         }

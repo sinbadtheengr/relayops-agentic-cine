@@ -72,15 +72,23 @@ scout_agent = LlmAgent(
 
 Use the parallel_search tool (2-4 calls, each with a focused objective and
 2-5 queries) to research festivals that fit this film RIGHT NOW:
-- currently open or upcoming submission windows and their deadlines/fees
+- currently open or upcoming submission windows and their deadlines/fees.
+  Results carry a publish_date: prefer recent pages, and never carry a prior
+  cycle's deadline forward as if it were this one's
 - genre and theme fit (recent lineups, programmer interviews, festival focus)
 - a spread of tiers: top-tier, respected mid-tier, and niche/genre festivals
 
 Then output a JSON list of 12-20 festival candidates, each with: name, tier
-(top/mid/niche), submission_deadline, fee_usd, fit_reason (one sentence citing
-what you found), premiere_requirement, source_url. Only include festivals you
-found evidence for in search results — never invent deadlines or fees. If a
-field is unverified, set it to null. Output ONLY the JSON list.""",
+(top/mid/niche), submission_deadline, fee_usd, fit_score, fit_reason (one
+sentence citing what you found), premiere_requirement, source_url.
+
+fit_score is a 0.0-1.0 judgment of how well this film suits this festival, and
+it is the only ranking signal the planner has — score honestly and spread the
+range, because scoring everything alike reduces the plan to cheapest-first.
+
+source_url must be a page you actually saw in the search results. Only include
+festivals you found evidence for — never invent deadlines or fees. If a field
+is unverified, set it to null. Output ONLY the JSON list.""",
     tools=[parallel_search],
     output_key="festival_research",
 )
