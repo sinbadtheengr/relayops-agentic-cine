@@ -88,11 +88,14 @@ adk web
 
 ## Roadmap (hackathon)
 
-- [x] Wk 1 — ADK pipeline + Parallel scout, deterministic strategy engine, offline fixture, 30 tests
-- [ ] Wk 2 — live-research validation: harness + rubric + 4-profile suite built (68 tests); **awaiting live keys to produce the verdict**. Then persistence (Firestore)
+- [x] Wk 1 — ADK pipeline + Parallel **Search** scout, deterministic strategy engine, offline fixture, 30 tests
+- [ ] Wk 2 — live-research validation: harness + rubric + 4-profile suite built (78 tests); **awaiting live keys to produce the verdict**
+  - [ ] **Verify stage on Parallel's Extract API**, if the baseline report earns it. Search returns excerpts, so the scout infers deadlines and fees from snippets — which is exactly what `missing_deadline` / `missing_fee` in the audit measure. If those dominate the set-aside counts, Extract pulls the actual submission-rules page and confirms the number before the planner trusts it. Re-run the same suite afterwards for a measured before/after rather than an unexplained new stage.
+  - [ ] Persistence (Firestore)
 - [ ] Wk 3 — web dashboard (submission kanban, deadline calendar) on Cloud Run; migrate `SequentialAgent` → ADK `Workflow` graph, using conditional routing to re-scout when the research yields too few usable candidates
+  - [ ] **Deadline watch on Parallel's Monitor API** — festival deadlines shift, extensions get announced, fee waivers appear. Watching each planned festival's submission page turns a one-shot plan into a living pipeline and gives the kanban something to react to. This is also the stage that ports back to RelayOps as follow-up triggers.
 - [ ] Wk 4 — multimodal trailer analysis, polish, demo data
-- [ ] Wk 5 — 3-min demo video, Devpost submission (due Sept 7, 2026)
+- [ ] Wk 5 — 3-min demo video, Devpost submission (due **Sept 9, 2026, 2:00 PM PDT**)
 
 ## License
 

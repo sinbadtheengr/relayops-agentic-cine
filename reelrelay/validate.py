@@ -107,6 +107,20 @@ async def run_profile(profile_path: pathlib.Path, verbose: bool) -> tuple[dict, 
     return (dict(final.state) if final else {}), capture
 
 
+# Values carried over unedited from .env.example. They are truthy enough to pass
+# a naive check but earn a 401 from the provider, which the audit would record as
+# a search error and grade NO-GO -- the worst verdict this harness could invent.
+PLACEHOLDER_PREFIXES = ("your-", "your_", "<", "changeme", "replace-me", "xxx")
+
+
+def configured(name: str) -> str | None:
+    """Env var value, treating blanks and .env.example placeholders as unset."""
+    value = (os.environ.get(name) or "").strip()
+    if not value or value.lower().startswith(PLACEHOLDER_PREFIXES):
+        return None
+    return value
+
+
 def check_environment(allow_offline: bool) -> str | None:
     """Return an error message if this run cannot produce an honest verdict."""
     offline = os.environ.get("REELRELAY_OFFLINE") == "1"
@@ -116,13 +130,13 @@ def check_environment(allow_offline: bool) -> str | None:
             "so it cannot answer the go/no-go. Unset it, or pass --allow-offline to "
             "smoke-test the harness (the verdict will be UNVALIDATED)."
         )
-    if not offline and not os.environ.get("PARALLEL_API_KEY"):
+    if not offline and not configured("PARALLEL_API_KEY"):
         return (
-            "PARALLEL_API_KEY is not set. Copy .env.example to .env and add keys "
-            "from https://platform.parallel.ai (and an AI Studio key for Gemini), "
-            "then re-run."
+            "PARALLEL_API_KEY is not set (or still holds the .env.example "
+            "placeholder). Copy .env.example to .env and add a real key from "
+            "https://platform.parallel.ai, then re-run."
         )
-    if not (os.environ.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_CLOUD_PROJECT")):
+    if not (configured("GOOGLE_API_KEY") or configured("GOOGLE_CLOUD_PROJECT")):
         return (
             "No Gemini credentials found. Set GOOGLE_API_KEY (AI Studio) or "
             "GOOGLE_CLOUD_PROJECT with GOOGLE_GENAI_USE_VERTEXAI=TRUE in .env. "

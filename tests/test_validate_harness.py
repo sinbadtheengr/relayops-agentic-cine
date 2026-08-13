@@ -8,7 +8,9 @@ off the event stream, and refusing to grade a run that can't be graded honestly
 
 import json
 
-from reelrelay.validate import SUITE, RunCapture, check_environment
+import pytest
+
+from reelrelay.validate import SUITE, RunCapture, check_environment, configured
 
 KEYS = {"PARALLEL_API_KEY": "pk-test", "GOOGLE_API_KEY": "gk-test"}
 
@@ -111,6 +113,45 @@ class TestEnvironmentGuard:
         set_keys(monkeypatch, GOOGLE_API_KEY=None)
         monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "reelrelay-demo")
         assert check_environment(allow_offline=False) is None
+
+
+class TestPlaceholderKeys:
+    """An unedited .env.example must not reach the provider as a 401.
+
+    A placeholder key is truthy, so a naive check lets the run proceed; the
+    scout then fails authentication and the audit grades that NO-GO. The
+    harness must refuse rather than manufacture a false verdict.
+    """
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "your-parallel-api-key",
+            "your-ai-studio-key",
+            "YOUR-GCP-PROJECT-ID",
+            "your_api_key",
+            "<paste key here>",
+            "changeme",
+            "  ",
+            "",
+        ],
+    )
+    def test_placeholders_read_as_unset(self, monkeypatch, value):
+        monkeypatch.setenv("PARALLEL_API_KEY", value)
+        assert configured("PARALLEL_API_KEY") is None
+
+    def test_real_looking_keys_pass_through(self, monkeypatch):
+        monkeypatch.setenv("PARALLEL_API_KEY", "pk-live-abc123")
+        assert configured("PARALLEL_API_KEY") == "pk-live-abc123"
+
+    def test_an_unedited_env_example_is_refused(self, monkeypatch):
+        set_keys(
+            monkeypatch,
+            PARALLEL_API_KEY="your-parallel-api-key",
+            GOOGLE_API_KEY="your-ai-studio-key",
+        )
+        message = check_environment(allow_offline=False)
+        assert message and "placeholder" in message
 
 
 class TestSuite:
