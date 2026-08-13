@@ -94,7 +94,7 @@ adk web
   - [ ] Persistence (Firestore)
 - [ ] Wk 3 — web dashboard (submission kanban, deadline calendar) on Cloud Run; migrate `SequentialAgent` → ADK `Workflow` graph, using conditional routing to re-scout when the research yields too few usable candidates
   - [ ] **Deadline watch on Parallel's Monitor API** — festival deadlines shift, extensions get announced, fee waivers appear. Watching each planned festival's submission page turns a one-shot plan into a living pipeline and gives the kanban something to react to. This is also the stage that ports back to RelayOps as follow-up triggers.
-- [ ] Wk 4 — multimodal trailer analysis, polish, demo data
+- [ ] Wk 4 — **multimodal trailer analysis — committed scope, not a stretch.** Gemini reads the trailer for tone and theme and feeds that into the scout's fit reasoning, so the plan reflects how the film actually plays rather than how its logline reads. It is also this project's only GenMedia surface: an *Agentic Cinema* entry that generates nothing invites the question, and this answers it. Then polish and demo data.
 - [ ] Wk 5 — 3-min demo video, Devpost submission (due **Sept 9, 2026, 2:00 PM PDT**)
 
 ## License
