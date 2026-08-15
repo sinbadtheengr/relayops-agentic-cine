@@ -6,6 +6,7 @@ intake → scout → strategist → pitch. `root_agent` is the entry point that
 """
 
 import os
+from datetime import date
 
 from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
@@ -14,6 +15,17 @@ from .strategy import build_plan, loads_loose
 from .tools import parallel_search
 
 MODEL = os.environ.get("REELRELAY_MODEL", "gemini-2.5-flash")
+
+
+def stamp_today(callback_context: CallbackContext) -> None:
+    """Tell the scout what day it is.
+
+    Nothing else in the pipeline did, so the model guessed submission years from
+    its training priors -- and guessed differently on each run. Validation runs
+    saw it search 2024/2025 cycles in August 2026, which surfaced as candidates
+    rejected for deadlines that had expired a year or more earlier.
+    """
+    callback_context.state["today"] = date.today().isoformat()
 
 
 def compute_plan(callback_context: CallbackContext) -> None:
@@ -66,7 +78,14 @@ scout_agent = LlmAgent(
     name="scout",
     model=MODEL,
     description="Researches currently-open festivals that fit the film, using live web search.",
-    instruction="""You are a film-festival researcher. Here is the film profile:
+    instruction="""You are a film-festival researcher. Today's date is {today}.
+
+Festival cycles turn over every year. Work out the current and next cycle from
+that date and put those years in your queries — do not guess a year from
+memory, and do not research a cycle that has already closed. Every deadline you
+report must fall on or after {today}.
+
+Here is the film profile:
 
 {film_profile}
 
@@ -90,6 +109,7 @@ source_url must be a page you actually saw in the search results. Only include
 festivals you found evidence for — never invent deadlines or fees. If a field
 is unverified, set it to null. Output ONLY the JSON list.""",
     tools=[parallel_search],
+    before_agent_callback=stamp_today,
     output_key="festival_research",
 )
 

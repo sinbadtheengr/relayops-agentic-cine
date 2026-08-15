@@ -1,8 +1,9 @@
 """Guards on the seams between the agents, the callback, and the fixture."""
 
 import json
+from datetime import date
 
-from reelrelay.agent import compute_plan, root_agent
+from reelrelay.agent import compute_plan, root_agent, stamp_today
 from reelrelay.strategy import loads_loose
 from reelrelay.tools import FIXTURE_PATH, _offline_results
 
@@ -48,6 +49,27 @@ class TestPipelineShape:
             getattr(t, "__name__", getattr(t, "name", "")) == "parallel_search"
             for t in scout.tools
         )
+
+
+class TestScoutKnowsTheDate:
+    """Without this the model guessed submission years from training priors."""
+
+    def test_callback_stamps_an_iso_date(self):
+        state = {}
+        stamp_today(FakeCallbackContext(state))
+        assert state["today"] == date.today().isoformat()
+
+    def test_scout_instruction_reads_it_back(self):
+        scout = next(a for a in root_agent.sub_agents if a.name == "scout")
+        assert "{today}" in scout.instruction
+
+    def test_scout_is_wired_to_the_callback(self):
+        """A {today} placeholder with nothing populating it would render empty."""
+        scout = next(a for a in root_agent.sub_agents if a.name == "scout")
+        callbacks = scout.before_agent_callback
+        if not isinstance(callbacks, list):
+            callbacks = [callbacks]
+        assert any(getattr(c, "__name__", "") == "stamp_today" for c in callbacks)
 
 
 class TestComputePlanCallback:

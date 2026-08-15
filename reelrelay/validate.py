@@ -167,7 +167,13 @@ async def main_async(args: argparse.Namespace) -> int:
         except Exception as exc:  # a crashed run is data, not a stack trace
             print(f"  run failed: {exc}", file=sys.stderr)
             audits.append(
-                audit_run({"title": path.stem}, [], [], search_errors=[f"run failed: {exc}"])
+                audit_run(
+                    {"title": path.stem},
+                    [],
+                    [],
+                    search_errors=[f"run failed: {exc}"],
+                    aborted=True,
+                )
             )
             continue
 

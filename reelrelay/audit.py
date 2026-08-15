@@ -74,6 +74,7 @@ class ResearchAudit:
 
     profile_title: str = ""
     synthetic: bool = False
+    aborted: bool = False
 
     parallel_calls: int = 0
     parallel_results: int = 0
@@ -117,6 +118,7 @@ class ResearchAudit:
         return {
             "profile_title": self.profile_title,
             "synthetic": self.synthetic,
+            "aborted": self.aborted,
             "verdict": self.verdict,
             "reasons": self.reasons,
             "parallel": {
@@ -205,6 +207,7 @@ def audit_run(
     parallel_results: int = 0,
     search_errors: list | None = None,
     synthetic: bool = False,
+    aborted: bool = False,
     today: date | None = None,
 ) -> ResearchAudit:
     """Grade one run of the pipeline.
@@ -216,6 +219,10 @@ def audit_run(
 
     `synthetic=True` (fixture data) forces the UNVALIDATED verdict no matter how
     the numbers look: a go/no-go must never be answered with invented festivals.
+
+    `aborted=True` (the run crashed) does the same, as does any search error. A
+    run that could not complete has measured nothing, and grading a partial
+    measurement NO-GO would blame the festival circuit for a dropped network.
     """
     today = today or date.today()
     profile = profile if isinstance(profile, dict) else {}
@@ -224,6 +231,7 @@ def audit_run(
     audit = ResearchAudit(
         profile_title=str(profile.get("title") or "untitled"),
         synthetic=synthetic,
+        aborted=aborted,
         parallel_calls=parallel_calls,
         parallel_results=parallel_results,
         search_errors=list(search_errors or []),
@@ -288,11 +296,22 @@ def _score(audit: ResearchAudit) -> tuple[str, list[str]]:
             "go/no-go. Re-run with live PARALLEL_API_KEY and GOOGLE_API_KEY."
         ]
 
+    # A run that could not complete has measured nothing. Grading it NO-GO would
+    # blame the festival circuit for a dropped network or an expired token, which
+    # is exactly the false negative this rubric exists to avoid.
+    if audit.aborted:
+        detail = "; ".join(audit.search_errors) or "no detail captured"
+        return UNVALIDATED, [f"The run did not complete ({detail}). Re-run."]
+    if audit.search_errors:
+        return UNVALIDATED, [
+            f"Research was incomplete -- {len(audit.search_errors)} search error(s): "
+            + "; ".join(audit.search_errors)
+            + ". A partial measurement cannot be graded honestly. Re-run."
+        ]
+
     failures: list[str] = []
     blockers: list[str] = []
 
-    if audit.search_errors:
-        blockers.append(f"Parallel search returned {len(audit.search_errors)} error(s)")
     if audit.parallel_calls == 0:
         blockers.append("the scout never called parallel_search (track requirement unmet)")
     if audit.plan_size == 0:

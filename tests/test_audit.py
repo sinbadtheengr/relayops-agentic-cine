@@ -132,9 +132,24 @@ class TestFailureModes:
         assert audit.verdict == NO_GO
         assert any("never called parallel_search" in r for r in audit.reasons)
 
-    def test_search_errors_block_a_verdict(self):
+    def test_search_errors_void_the_verdict_rather_than_condemning_the_data(self):
+        """A partial measurement must not be graded NO-GO."""
         audit = audit_fixture(search_errors=["Parallel search failed: 401"])
-        assert audit.verdict == NO_GO
+        assert audit.verdict == UNVALIDATED
+        assert "incomplete" in " ".join(audit.reasons)
+
+    def test_a_crashed_run_is_unvalidated_not_a_no_go(self):
+        """A dropped network is not evidence about the festival circuit."""
+        audit = audit_run(
+            {"title": "Whatever"},
+            [],
+            [],
+            search_errors=["run failed: getaddrinfo failed"],
+            aborted=True,
+            today=TODAY,
+        )
+        assert audit.verdict == UNVALIDATED
+        assert "did not complete" in " ".join(audit.reasons)
 
     def test_thin_but_workable_research_is_marginal_not_fatal(self):
         """Nine usable candidates fill the tier minimums but miss the yield bar."""
