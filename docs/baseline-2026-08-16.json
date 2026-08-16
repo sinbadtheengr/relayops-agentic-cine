@@ -1,0 +1,302 @@
+{
+  "generated_at": "2026-08-16T16:41:29",
+  "suite_verdict": "NO-GO",
+  "profiles": [
+    {
+      "profile_title": "Night Shift at the Lumi\u00e8re",
+      "synthetic": false,
+      "aborted": false,
+      "verdict": "MARGINAL",
+      "reasons": [
+        "usable candidates cannot fill the reach/target/safe minimums"
+      ],
+      "parallel": {
+        "calls": 4,
+        "results": 27,
+        "errors": []
+      },
+      "candidates": {
+        "emitted": 12,
+        "usable": 9,
+        "usable_rate": 0.75,
+        "set_aside_reasons": {
+          "missing_fee": 3
+        },
+        "set_aside": [
+          {
+            "name": "Brooklyn Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Memorables Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Mostra Cinepoesia, Videopoesia, Cinepoetry Film Festival, Experimental Cinema",
+            "reason": "no verified fee \u2014 confirm manually"
+          }
+        ],
+        "duplicate_names": [],
+        "unmapped_tiers": [],
+        "missing_fit_scores": 0
+      },
+      "tiers": {
+        "usable": {
+          "reach": 1,
+          "target": 5,
+          "safe": 3
+        },
+        "minimums": {
+          "reach": 2,
+          "target": 4,
+          "safe": 3
+        },
+        "minimums_met": false
+      },
+      "grounding": {
+        "grounded": 12,
+        "rate": 1.0,
+        "exact_url_matches": 12,
+        "missing_source_url": 0,
+        "ungrounded": []
+      },
+      "plan": {
+        "submissions": 9,
+        "budget_usd": 600.0,
+        "committed_usd": 480.0
+      }
+    },
+    {
+      "profile_title": "The Last Rewind",
+      "synthetic": false,
+      "aborted": false,
+      "verdict": "MARGINAL",
+      "reasons": [
+        "6 usable, wanted >= 9 to fill tier minimums",
+        "usable rate 50%, wanted >= 60%",
+        "usable candidates cannot fill the reach/target/safe minimums"
+      ],
+      "parallel": {
+        "calls": 3,
+        "results": 27,
+        "errors": []
+      },
+      "candidates": {
+        "emitted": 12,
+        "usable": 6,
+        "usable_rate": 0.5,
+        "set_aside_reasons": {
+          "missing_fee": 6
+        },
+        "set_aside": [
+          {
+            "name": "DOC LA. Los Angeles Documentary Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "SXSW Film & TV Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "San Francisco Documentary Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "American Documentary and Animation Film Festival (AmDocs)",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "True/False Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Milwaukee Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          }
+        ],
+        "duplicate_names": [],
+        "unmapped_tiers": [],
+        "missing_fit_scores": 0
+      },
+      "tiers": {
+        "usable": {
+          "reach": 1,
+          "target": 3,
+          "safe": 2
+        },
+        "minimums": {
+          "reach": 2,
+          "target": 4,
+          "safe": 3
+        },
+        "minimums_met": false
+      },
+      "grounding": {
+        "grounded": 12,
+        "rate": 1.0,
+        "exact_url_matches": 12,
+        "missing_source_url": 0,
+        "ungrounded": []
+      },
+      "plan": {
+        "submissions": 6,
+        "budget_usd": 1800.0,
+        "committed_usd": 487.0
+      }
+    },
+    {
+      "profile_title": "Vacancy, No Vacancy",
+      "synthetic": false,
+      "aborted": false,
+      "verdict": "NO-GO",
+      "reasons": [
+        "only 5 usable candidate(s); below the 6 floor for any workable slate",
+        "10 candidates emitted, wanted >= 12",
+        "5 usable, wanted >= 9 to fill tier minimums",
+        "usable rate 50%, wanted >= 60%",
+        "usable candidates cannot fill the reach/target/safe minimums",
+        "plan has 4 submissions, wanted >= 6"
+      ],
+      "parallel": {
+        "calls": 4,
+        "results": 34,
+        "errors": []
+      },
+      "candidates": {
+        "emitted": 10,
+        "usable": 5,
+        "usable_rate": 0.5,
+        "set_aside_reasons": {
+          "missing_fee": 5
+        },
+        "set_aside": [
+          {
+            "name": "SXSW Film & TV Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Hollywood ShortsFest",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "New York Short Cinema Awards",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "LA Indie Shorts",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "San Francisco International Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          }
+        ],
+        "duplicate_names": [],
+        "unmapped_tiers": [],
+        "missing_fit_scores": 0
+      },
+      "tiers": {
+        "usable": {
+          "reach": 1,
+          "target": 1,
+          "safe": 3
+        },
+        "minimums": {
+          "reach": 2,
+          "target": 4,
+          "safe": 3
+        },
+        "minimums_met": false
+      },
+      "grounding": {
+        "grounded": 10,
+        "rate": 1.0,
+        "exact_url_matches": 10,
+        "missing_source_url": 0,
+        "ungrounded": []
+      },
+      "plan": {
+        "submissions": 4,
+        "budget_usd": 250.0,
+        "committed_usd": 232.0
+      }
+    },
+    {
+      "profile_title": "La Casa de los Relojes Rotos",
+      "synthetic": false,
+      "aborted": false,
+      "verdict": "NO-GO",
+      "reasons": [
+        "only 5 usable candidate(s); below the 6 floor for any workable slate",
+        "10 candidates emitted, wanted >= 12",
+        "5 usable, wanted >= 9 to fill tier minimums",
+        "usable rate 50%, wanted >= 60%",
+        "usable candidates cannot fill the reach/target/safe minimums",
+        "plan has 5 submissions, wanted >= 6"
+      ],
+      "parallel": {
+        "calls": 4,
+        "results": 38,
+        "errors": []
+      },
+      "candidates": {
+        "emitted": 10,
+        "usable": 5,
+        "usable_rate": 0.5,
+        "set_aside_reasons": {
+          "missing_fee": 5
+        },
+        "set_aside": [
+          {
+            "name": "Stuttgart International Festival of Animated Film (ITFS)",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "European Short Awards",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Clermont-Ferrand International Short Film Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "ANIMAFILM International Animation Festival (Baku)",
+            "reason": "no verified fee \u2014 confirm manually"
+          },
+          {
+            "name": "Encounters Short Film and Animation Festival",
+            "reason": "no verified fee \u2014 confirm manually"
+          }
+        ],
+        "duplicate_names": [],
+        "unmapped_tiers": [],
+        "missing_fit_scores": 0
+      },
+      "tiers": {
+        "usable": {
+          "reach": 2,
+          "target": 1,
+          "safe": 2
+        },
+        "minimums": {
+          "reach": 2,
+          "target": 4,
+          "safe": 3
+        },
+        "minimums_met": false
+      },
+      "grounding": {
+        "grounded": 10,
+        "rate": 1.0,
+        "exact_url_matches": 10,
+        "missing_source_url": 0,
+        "ungrounded": []
+      },
+      "plan": {
+        "submissions": 5,
+        "budget_usd": 450.0,
+        "committed_usd": 48.0
+      }
+    }
+  ]
+}

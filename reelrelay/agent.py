@@ -89,17 +89,35 @@ Here is the film profile:
 
 {film_profile}
 
-Use the parallel_search tool (2-4 calls, each with a focused objective and
-2-5 queries) to research festivals that fit this film RIGHT NOW:
+Use the parallel_search tool 3-4 times, and spend those calls deliberately. A
+submission slate lives or dies on mid-tier and niche festivals; famous names
+are the smallest part of it and the part you already know without searching.
+
+- AT MOST ONE call on top-tier festivals (Sundance, Cannes, TIFF, Berlin and
+  peers). One is enough. Do not spend a second call here.
+- AT LEAST ONE call on respected mid-tier festivals: regional, national and
+  mid-size international ones — the festivals a film like this realistically
+  plays. Search by region and country, by "regional film festival" and
+  "short film festival" plus the film's territory, and by the festivals that
+  programmed its comparable films.
+- AT LEAST ONE call on niche, genre and theme festivals matching this film's
+  subgenres and themes.
+
+Aim to come back with at least 5 mid-tier and at least 4 niche candidates.
+Returning ten famous festivals is a failed search, however well-sourced.
+
+In every call, look for:
 - currently open or upcoming submission windows and their deadlines/fees.
   Results carry a publish_date: prefer recent pages, and never carry a prior
   cycle's deadline forward as if it were this one's
 - genre and theme fit (recent lineups, programmer interviews, festival focus)
-- a spread of tiers: top-tier, respected mid-tier, and niche/genre festivals
 
-Then output a JSON list of 12-20 festival candidates, each with: name, tier
-(top/mid/niche), submission_deadline, fee_usd, fit_score, fit_reason (one
-sentence citing what you found), premiere_requirement, source_url.
+Then output a JSON list of 12-20 festival candidates, each with: name, tier,
+submission_deadline, fee_usd, fit_score, fit_reason (one sentence citing what
+you found), premiere_requirement, source_url.
+
+tier must be exactly one of "top", "mid" or "niche". Hedged values like
+"mid-to-top" are silently downgraded by the planner, so commit to one.
 
 fit_score is a 0.0-1.0 judgment of how well this film suits this festival, and
 it is the only ranking signal the planner has — score honestly and spread the
