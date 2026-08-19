@@ -5,7 +5,7 @@ from datetime import date
 
 from reelrelay.agent import compute_plan, root_agent, stamp_today
 from reelrelay.strategy import loads_loose
-from reelrelay.tools import FIXTURE_PATH, _offline_results
+from reelrelay.tools import FIXTURE_PATH, _offline_extract, _offline_results
 
 
 class FakeCallbackContext:
@@ -26,10 +26,11 @@ def fixture_candidates():
 
 
 class TestPipelineShape:
-    def test_four_stages_in_order(self):
+    def test_five_stages_in_order(self):
         assert [a.name for a in root_agent.sub_agents] == [
             "intake",
             "scout",
+            "verify",
             "strategist",
             "pitch",
         ]
@@ -39,16 +40,22 @@ class TestPipelineShape:
         assert keys == {
             "intake": "film_profile",
             "scout": "festival_research",
+            "verify": "verified_research",
             "strategist": "submission_plan",
             "pitch": "sample_pitch",
         }
 
-    def test_scout_owns_the_parallel_tool(self):
-        scout = next(a for a in root_agent.sub_agents if a.name == "scout")
-        assert any(
-            getattr(t, "__name__", getattr(t, "name", "")) == "parallel_search"
-            for t in scout.tools
-        )
+    def test_scout_owns_search_and_verify_owns_extract(self):
+        def tool_names(agent):
+            return {
+                getattr(t, "__name__", getattr(t, "name", "")) for t in agent.tools
+            }
+
+        by_name = {a.name: a for a in root_agent.sub_agents}
+        assert "parallel_search" in tool_names(by_name["scout"])
+        assert "parallel_extract" in tool_names(by_name["verify"])
+        # The scout must not be able to skip the verify stage by extracting.
+        assert "parallel_extract" not in tool_names(by_name["scout"])
 
 
 class TestScoutKnowsTheDate:
@@ -90,6 +97,30 @@ class TestComputePlanCallback:
             assert state["computed_plan"]
             assert "Do not invent festivals." in state["computed_plan"]
 
+    def test_prefers_the_verified_list_over_the_scouts_raw_one(self):
+        raw = fixture_candidates()
+        verified = [dict(c) for c in raw]
+        # A distinctive but affordable fee -- only the verify stage could know it,
+        # and an unaffordable one would be excluded for the wrong reason.
+        verified[0]["fee_usd"] = 51
+        state = {
+            "film_profile": PROFILE,
+            "festival_research": json.dumps(raw),
+            "verified_research": json.dumps(verified),
+        }
+        compute_plan(FakeCallbackContext(state))
+        assert "$51.00" in state["computed_plan"]
+
+    def test_falls_back_to_raw_research_when_verification_produced_nothing(self):
+        for verified in (None, "", "[]", "the model rambled"):
+            state = {
+                "film_profile": PROFILE,
+                "festival_research": json.dumps(fixture_candidates()),
+                "verified_research": verified,
+            }
+            compute_plan(FakeCallbackContext(state))
+            assert "Computed submission plan" in state["computed_plan"]
+
     def test_survives_a_malformed_profile(self):
         state = {
             "film_profile": "not json",
@@ -122,6 +153,22 @@ class TestOfflineFixture:
         assert any(c["submission_deadline"] is None for c in candidates)
         assert any(c["submission_deadline"] == "2026-03-15" for c in candidates)
         assert any(c["premiere_requirement"] for c in candidates)
+
+    def test_offline_extract_returns_only_the_pages_asked_for(self, monkeypatch):
+        monkeypatch.setenv("REELRELAY_OFFLINE", "1")
+        from reelrelay.tools import parallel_extract
+
+        wanted = fixture_candidates()[1]["source_url"]
+        out = parallel_extract([wanted], "the submission fee and deadline")
+        assert out["status"] == "ok"
+        assert out["offline_fixture"] is True
+        assert [r["url"] for r in out["results"]] == [wanted]
+
+    def test_offline_extract_invents_nothing_for_unknown_urls(self):
+        """A page the fixture does not know must come back empty, not guessed."""
+        out = _offline_extract(["https://not-in-the-fixture.invalid/submit"])
+        assert out["results"] == []
+        assert out["errors"] == []
 
     def test_excerpts_round_trip_back_into_candidates(self):
         """The scout reads excerpts; they must parse back into planner input."""

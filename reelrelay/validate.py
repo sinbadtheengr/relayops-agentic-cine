@@ -45,18 +45,23 @@ class RunCapture:
 
     def __init__(self) -> None:
         self.parallel_calls = 0
+        self.extract_calls = 0
         self.queries: list[str] = []
-        self.search_urls: list[str] = []
+        self.search_urls: list[str] = []  # every URL Parallel actually retrieved
         self.result_count = 0
         self.errors: list[str] = []
+        self.unreachable_pages = 0
         self.saw_fixture = False
 
-    def note_call(self, args: dict) -> None:
+    def note_call(self, name: str, args: dict) -> None:
+        if name == "parallel_extract":
+            self.extract_calls += 1
+            return
         self.parallel_calls += 1
         for query in args.get("search_queries") or []:
             self.queries.append(str(query))
 
-    def note_response(self, payload) -> None:
+    def note_response(self, name: str, payload) -> None:
         # ADK passes dict returns through, but wraps other shapes in {"result": ...}.
         if isinstance(payload, dict) and "status" not in payload and "result" in payload:
             payload = payload["result"]
@@ -66,10 +71,15 @@ class RunCapture:
         if payload.get("offline_fixture"):
             self.saw_fixture = True
         if payload.get("status") != "ok":
-            self.errors.append(str(payload.get("message", "unknown search failure")))
+            self.errors.append(str(payload.get("message", f"unknown {name} failure")))
             return
+        # A festival page that 404s is a finding about that festival, not a
+        # broken measurement -- it must not void the verdict the way a failed
+        # API call does.
+        self.unreachable_pages += len(payload.get("errors") or [])
         for result in payload.get("results") or []:
-            self.result_count += 1
+            if name != "parallel_extract":
+                self.result_count += 1
             url = result.get("url") if isinstance(result, dict) else None
             if url:
                 self.search_urls.append(str(url))
@@ -92,14 +102,19 @@ async def run_profile(profile_path: pathlib.Path, verbose: bool) -> tuple[dict, 
             continue
         for part in event.content.parts:
             call = part.function_call
-            if call and call.name == "parallel_search":
-                capture.note_call(dict(call.args or {}))
+            if call and call.name in ("parallel_search", "parallel_extract"):
+                capture.note_call(call.name, dict(call.args or {}))
                 if verbose:
-                    queries = (call.args or {}).get("search_queries") or []
-                    print(f"  [scout] search: {'; '.join(str(q) for q in queries)}")
+                    args = call.args or {}
+                    if call.name == "parallel_extract":
+                        urls = args.get("urls") or []
+                        print(f"  [verify] extract: {len(urls)} page(s)")
+                    else:
+                        queries = args.get("search_queries") or []
+                        print(f"  [scout] search: {'; '.join(str(q) for q in queries)}")
             response = part.function_response
-            if response and response.name == "parallel_search":
-                capture.note_response(response.response)
+            if response and response.name in ("parallel_search", "parallel_extract"):
+                capture.note_response(response.name, response.response)
 
     final = await runner.session_service.get_session(
         app_name="reelrelay-validate", user_id="validate", session_id=session.id
@@ -180,12 +195,17 @@ async def main_async(args: argparse.Namespace) -> int:
         profile = loads_loose(state.get("film_profile")) or {}
         if not profile.get("title"):
             profile["title"] = path.stem
-        candidates = loads_loose(state.get("festival_research"))
-        if not isinstance(candidates, list):
+        raw = loads_loose(state.get("festival_research"))
+        raw = raw if isinstance(raw, list) else None
+        # Grade the verified list; fall back to the scout's raw one if the
+        # verify stage produced nothing usable.
+        candidates = loads_loose(state.get("verified_research"))
+        if not isinstance(candidates, list) or not candidates:
+            candidates = raw or []
+        if not candidates:
             capture.errors.append(
                 "the scout produced no machine-readable JSON candidate list"
             )
-            candidates = []
 
         audit = audit_run(
             profile,
@@ -193,6 +213,8 @@ async def main_async(args: argparse.Namespace) -> int:
             capture.search_urls,
             parallel_calls=capture.parallel_calls,
             parallel_results=capture.result_count,
+            extract_calls=capture.extract_calls,
+            raw_candidates=raw,
             search_errors=capture.errors,
             synthetic=capture.saw_fixture,
         )

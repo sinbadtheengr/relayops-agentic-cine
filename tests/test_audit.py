@@ -206,6 +206,53 @@ class TestReasonBuckets:
         assert bucket_reason(skipped[0][1]) != "other"
 
 
+class TestVerificationCredit:
+    """What the Extract stage rescued -- the before/after the roadmap promised."""
+
+    def test_recovered_fees_are_counted(self):
+        raw = fixture_candidates()
+        for candidate in raw:
+            candidate["fee_usd"] = None
+        audit = audit_run(
+            PROFILE,
+            fixture_candidates(),
+            fixture_urls(),
+            parallel_calls=3,
+            extract_calls=2,
+            raw_candidates=raw,
+            today=TODAY,
+        )
+        assert audit.fees_recovered == len(raw)
+        assert audit.extract_calls == 2
+
+    def test_recovered_deadlines_are_counted(self):
+        raw = fixture_candidates()
+        for candidate in raw:
+            candidate["submission_deadline"] = None
+        verified = fixture_candidates()
+        audit = audit_run(
+            PROFILE, verified, fixture_urls(), parallel_calls=3, raw_candidates=raw, today=TODAY
+        )
+        expected = sum(1 for c in verified if c["submission_deadline"])
+        assert audit.deadlines_recovered == expected
+
+    def test_fields_already_present_earn_no_credit(self):
+        """Verification is credited for filling gaps, not for echoing the scout."""
+        audit = audit_run(
+            PROFILE,
+            fixture_candidates(),
+            fixture_urls(),
+            parallel_calls=3,
+            raw_candidates=fixture_candidates(),
+            today=TODAY,
+        )
+        assert audit.fees_recovered == 0
+        assert audit.deadlines_recovered == 0
+
+    def test_a_run_without_verification_credits_nothing(self):
+        assert audit_fixture().fees_recovered == 0
+
+
 class TestSuiteVerdict:
     def test_the_worst_profile_sets_the_suite_verdict(self):
         good = audit_fixture()

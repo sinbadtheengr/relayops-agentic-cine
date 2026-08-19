@@ -12,7 +12,7 @@ from google.adk.agents import LlmAgent, SequentialAgent
 from google.adk.agents.callback_context import CallbackContext
 
 from .strategy import build_plan, loads_loose
-from .tools import parallel_search
+from .tools import parallel_extract, parallel_search
 
 MODEL = os.environ.get("REELRELAY_MODEL", "gemini-2.5-flash")
 
@@ -37,7 +37,11 @@ def compute_plan(callback_context: CallbackContext) -> None:
     """
     state = callback_context.state
     profile = loads_loose(state.get("film_profile")) or {}
-    research = loads_loose(state.get("festival_research"))
+    # The verify stage republishes the scout's list with fees confirmed off the
+    # festivals' own pages; fall back to the raw list if it did not produce one.
+    research = loads_loose(state.get("verified_research")) or loads_loose(
+        state.get("festival_research")
+    )
 
     if not isinstance(research, list) or not research:
         state["computed_plan"] = (
@@ -131,6 +135,45 @@ is unverified, set it to null. Output ONLY the JSON list.""",
     output_key="festival_research",
 )
 
+verify_agent = LlmAgent(
+    name="verify",
+    model=MODEL,
+    description="Reads festival pages directly to confirm fees and deadlines the search snippets omitted.",
+    instruction="""You verify festival details before a filmmaker spends money
+on them. Today is {today}. Here is the scout's candidate list:
+
+{festival_research}
+
+A candidate with a null fee_usd or null submission_deadline is discarded
+unfunded by the planner, however good its fit — and baseline validation showed
+this is the single biggest source of loss, because entry fees live on the
+submission page rather than in a search snippet.
+
+1. Collect the source_url of every candidate whose fee_usd or
+   submission_deadline is null.
+2. Call parallel_extract on them, batching up to 10 URLs per call, with an
+   objective naming exactly what you need — for example: "the short film
+   submission fee in USD and the regular submission deadline for the current
+   cycle".
+3. Read what comes back and fill in ONLY what the page actually states.
+
+Then output the COMPLETE candidate list as a JSON list — every candidate the
+scout gave you, verified or not, with the same keys.
+
+Rules that matter more than completeness:
+- If the page does not state a fee or deadline, leave it null. A fabricated fee
+  costs a filmmaker real money, and a wrong deadline costs them the festival.
+- If a page states a deadline earlier than {today}, that cycle has closed;
+  record what the page says rather than adjusting it to look current.
+- If a URL fails to extract, leave that candidate untouched.
+- Change nothing else — no new candidates, no re-tiering, no edited fit scores.
+
+Output ONLY the JSON list.""",
+    tools=[parallel_extract],
+    before_agent_callback=stamp_today,
+    output_key="verified_research",
+)
+
 strategist_agent = LlmAgent(
     name="strategist",
     model=MODEL,
@@ -182,6 +225,6 @@ invent nothing. Label it clearly with the festival name.""",
 
 root_agent = SequentialAgent(
     name="reelrelay",
-    description="ReelRelay: intake → live festival research → tiered submission strategy → sample pitch.",
-    sub_agents=[intake_agent, scout_agent, strategist_agent, pitch_agent],
+    description="ReelRelay: intake → live festival research → fee/deadline verification → tiered submission strategy → sample pitch.",
+    sub_agents=[intake_agent, scout_agent, verify_agent, strategist_agent, pitch_agent],
 )

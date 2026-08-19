@@ -78,7 +78,12 @@ class ResearchAudit:
 
     parallel_calls: int = 0
     parallel_results: int = 0
+    extract_calls: int = 0
     search_errors: list[str] = field(default_factory=list)
+
+    # What the verify stage rescued from the scout's raw list.
+    fees_recovered: int = 0
+    deadlines_recovered: int = 0
 
     candidate_count: int = 0
     usable_count: int = 0
@@ -122,9 +127,14 @@ class ResearchAudit:
             "verdict": self.verdict,
             "reasons": self.reasons,
             "parallel": {
-                "calls": self.parallel_calls,
-                "results": self.parallel_results,
+                "search_calls": self.parallel_calls,
+                "search_results": self.parallel_results,
+                "extract_calls": self.extract_calls,
                 "errors": self.search_errors,
+            },
+            "verification": {
+                "fees_recovered": self.fees_recovered,
+                "deadlines_recovered": self.deadlines_recovered,
             },
             "candidates": {
                 "emitted": self.candidate_count,
@@ -160,9 +170,12 @@ class ResearchAudit:
         lines = [
             f"### {self.profile_title or 'untitled'} -- {self.verdict}",
             "",
-            f"- Parallel: {self.parallel_calls} call(s), "
-            f"{self.parallel_results} result(s)"
+            f"- Parallel: {self.parallel_calls} search call(s), "
+            f"{self.parallel_results} result(s), "
+            f"{self.extract_calls} extract call(s)"
             + (f", {len(self.search_errors)} error(s)" if self.search_errors else ""),
+            f"- Verify stage recovered: {self.fees_recovered} fee(s), "
+            f"{self.deadlines_recovered} deadline(s)",
             f"- Candidates: {self.candidate_count} emitted, "
             f"{self.usable_count} usable ({self.usable_rate:.0%})",
             f"- Tier coverage (usable): {tiers}"
@@ -205,6 +218,8 @@ def audit_run(
     *,
     parallel_calls: int = 0,
     parallel_results: int = 0,
+    extract_calls: int = 0,
+    raw_candidates: list | None = None,
     search_errors: list | None = None,
     synthetic: bool = False,
     aborted: bool = False,
@@ -234,9 +249,29 @@ def audit_run(
         aborted=aborted,
         parallel_calls=parallel_calls,
         parallel_results=parallel_results,
+        extract_calls=extract_calls,
         search_errors=list(search_errors or []),
         candidate_count=len(candidates),
     )
+
+    # Credit the verify stage only where a field went from absent to present.
+    # Matching on name because the verify stage republishes the same list.
+    raw_by_name = {
+        str(c.get("name") or "").strip().lower(): c
+        for c in (raw_candidates or [])
+        if isinstance(c, dict)
+    }
+    for candidate in candidates:
+        before = raw_by_name.get(str(candidate.get("name") or "").strip().lower())
+        if before is None:
+            continue
+        if before.get("fee_usd") is None and candidate.get("fee_usd") is not None:
+            audit.fees_recovered += 1
+        if (
+            before.get("submission_deadline") is None
+            and candidate.get("submission_deadline") is not None
+        ):
+            audit.deadlines_recovered += 1
 
     usable, skipped = parse_candidates(candidates, today)
     audit.usable_count = len(usable)

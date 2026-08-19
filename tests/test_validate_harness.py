@@ -26,17 +26,22 @@ def set_keys(monkeypatch, **overrides):
     monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
 
 
+SEARCH = "parallel_search"
+EXTRACT = "parallel_extract"
+
+
 class TestRunCapture:
     def test_collects_urls_from_a_successful_search(self):
         capture = RunCapture()
         capture.note_response(
+            SEARCH,
             {
                 "status": "ok",
                 "results": [
                     {"url": "https://a.example/submit", "title": "A"},
                     {"url": "https://b.example/rules", "title": "B"},
                 ],
-            }
+            },
         )
         assert capture.search_urls == ["https://a.example/submit", "https://b.example/rules"]
         assert capture.result_count == 2
@@ -45,40 +50,80 @@ class TestRunCapture:
     def test_unwraps_adk_result_envelopes(self):
         """ADK passes dict returns through but wraps other shapes in {'result': ...}."""
         capture = RunCapture()
-        capture.note_response({"result": {"status": "ok", "results": [{"url": "https://x.example"}]}})
+        capture.note_response(
+            SEARCH, {"result": {"status": "ok", "results": [{"url": "https://x.example"}]}}
+        )
         assert capture.search_urls == ["https://x.example"]
         assert not capture.errors
 
     def test_search_failures_are_recorded_not_raised(self):
         capture = RunCapture()
-        capture.note_response({"status": "error", "message": "401 unauthorized"})
+        capture.note_response(SEARCH, {"status": "error", "message": "401 unauthorized"})
         assert capture.errors == ["401 unauthorized"]
         assert capture.result_count == 0
 
     def test_fixture_responses_are_flagged_so_the_verdict_can_be_voided(self):
         capture = RunCapture()
         capture.note_response(
-            {"status": "ok", "offline_fixture": True, "results": [{"url": "https://x.invalid"}]}
+            SEARCH,
+            {"status": "ok", "offline_fixture": True, "results": [{"url": "https://x.invalid"}]},
         )
         assert capture.saw_fixture is True
 
     def test_an_unreadable_response_becomes_an_error(self):
         capture = RunCapture()
-        capture.note_response("the tool returned prose")
+        capture.note_response(SEARCH, "the tool returned prose")
         assert capture.errors and "unreadable" in capture.errors[0]
 
     def test_calls_and_queries_are_counted(self):
         capture = RunCapture()
-        capture.note_call({"search_queries": ["horror shorts 2026 deadline", "genre fests"]})
-        capture.note_call({"search_queries": ["animation festival Mexico"]})
+        capture.note_call(SEARCH, {"search_queries": ["horror shorts deadline", "genre fests"]})
+        capture.note_call(SEARCH, {"search_queries": ["animation festival Mexico"]})
         assert capture.parallel_calls == 2
         assert len(capture.queries) == 3
 
     def test_results_without_urls_still_count(self):
         capture = RunCapture()
-        capture.note_response({"status": "ok", "results": [{"title": "no url here"}]})
+        capture.note_response(SEARCH, {"status": "ok", "results": [{"title": "no url here"}]})
         assert capture.result_count == 1
         assert capture.search_urls == []
+
+
+class TestExtractCapture:
+    def test_extract_calls_are_counted_separately_from_searches(self):
+        capture = RunCapture()
+        capture.note_call(SEARCH, {"search_queries": ["q"]})
+        capture.note_call(EXTRACT, {"urls": ["https://a.example", "https://b.example"]})
+        assert capture.parallel_calls == 1
+        assert capture.extract_calls == 1
+
+    def test_extracted_pages_ground_candidates_without_inflating_result_count(self):
+        """Result count measures search yield; extraction re-reads known pages."""
+        capture = RunCapture()
+        capture.note_response(
+            EXTRACT, {"status": "ok", "results": [{"url": "https://a.example/fees"}]}
+        )
+        assert capture.search_urls == ["https://a.example/fees"]
+        assert capture.result_count == 0
+
+    def test_an_unreachable_festival_page_does_not_void_the_verdict(self):
+        """A 404 on one submission page is a finding, not a broken measurement."""
+        capture = RunCapture()
+        capture.note_response(
+            EXTRACT,
+            {
+                "status": "ok",
+                "results": [],
+                "errors": [{"url": "https://dead.example", "http_status_code": 404}],
+            },
+        )
+        assert capture.unreachable_pages == 1
+        assert capture.errors == []
+
+    def test_a_failed_extract_call_is_still_an_error(self):
+        capture = RunCapture()
+        capture.note_response(EXTRACT, {"status": "error", "message": "429 rate limited"})
+        assert capture.errors == ["429 rate limited"]
 
 
 class TestEnvironmentGuard:

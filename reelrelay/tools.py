@@ -36,6 +36,88 @@ def _offline_results() -> dict:
     }
 
 
+def _offline_extract(urls: list[str]) -> dict:
+    """Fixture counterpart to parallel_extract, keyed by the fixture's own URLs."""
+    data = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    wanted = {str(u).strip() for u in urls or []}
+    return {
+        "status": "ok",
+        "offline_fixture": True,
+        "warning": "SYNTHETIC FIXTURE DATA — fictional festivals. Never present as real research.",
+        "results": [
+            {
+                "url": r["source_url"],
+                "title": r["name"],
+                "excerpts": [json.dumps(r)],
+                "publish_date": None,
+            }
+            for r in data["results"]
+            if r["source_url"] in wanted
+        ],
+        "errors": [],
+    }
+
+
+def parallel_extract(urls: list[str], objective: str) -> dict:
+    """Read festival pages directly to confirm what a search snippet omitted.
+
+    Search returns excerpts, and a festival's entry fee usually lives on the
+    submission page rather than in the snippet. Baseline validation found this
+    was the only reason candidates were unusable, so this is the stage that
+    turns a set-aside candidate into a fundable one.
+
+    Args:
+        urls: 1-10 page URLs to read, normally the source_url of candidates
+            whose fee or deadline came back null.
+        objective: What to find on those pages, e.g. "the short film submission
+            fee in USD and the regular submission deadline".
+
+    Returns:
+        dict with status, results (url, title, excerpts, publish_date) and
+        per-URL errors, or an error message if the key is missing or the call
+        fails.
+    """
+    if os.environ.get("REELRELAY_OFFLINE") == "1":
+        return _offline_extract(urls)
+
+    api_key = os.environ.get("PARALLEL_API_KEY")
+    if not api_key:
+        return {
+            "status": "error",
+            "message": "PARALLEL_API_KEY is not set. Copy .env.example to .env "
+            "and add your key from https://platform.parallel.ai, or set "
+            "REELRELAY_OFFLINE=1 to run against the synthetic fixture.",
+        }
+
+    try:
+        client = Parallel(api_key=api_key)
+        extracted = client.extract(urls=list(urls or []), objective=objective)
+        return {
+            "status": "ok",
+            "results": [
+                {
+                    "url": r.url,
+                    "title": r.title,
+                    "excerpts": r.excerpts,
+                    "publish_date": r.publish_date,
+                }
+                for r in extracted.results
+            ],
+            # Unreachable pages are data the agent should see, not a failure:
+            # a dead submission page is itself a reason to distrust the listing.
+            "errors": [
+                {
+                    "url": e.url,
+                    "error_type": e.error_type,
+                    "http_status_code": e.http_status_code,
+                }
+                for e in (extracted.errors or [])
+            ],
+        }
+    except Exception as exc:  # surface API failures to the agent as data
+        return {"status": "error", "message": f"Parallel extract failed: {exc}"}
+
+
 def parallel_search(objective: str, search_queries: list[str]) -> dict:
     """Run live web research via the Parallel Search API.
 

@@ -6,14 +6,22 @@ Indie filmmakers face 3,000+ festivals with different genre fits, premiere rules
 
 ## How it works
 
-A Gemini-powered ADK `SequentialAgent` with four stages, passing work through session state:
+A Gemini-powered ADK `SequentialAgent` with five stages, passing work through session state:
 
 | Stage | Agent | What it does |
 |---|---|---|
 | 1 | `intake` | Normalizes the filmmaker's description into a structured film profile |
 | 2 | `scout` | **Calls the Parallel Search API at runtime** to research currently-open festivals: deadlines, fees, recent lineups, programmer focus |
-| 3 | `strategist` | Explains the plan computed by [`strategy.py`](reelrelay/strategy.py) — tier balance, budget, premiere sequencing |
-| 4 | `pitch` | Drafts a personalized cover letter for the top-priority festival, grounded in the research |
+| 3 | `verify` | **Calls the Parallel Extract API** on candidates whose fee or deadline came back null, reading the festival's own submission page |
+| 4 | `strategist` | Explains the plan computed by [`strategy.py`](reelrelay/strategy.py) — tier balance, budget, premiere sequencing |
+| 5 | `pitch` | Drafts a personalized cover letter for the top-priority festival, grounded in the research |
+
+Stage 3 exists because measurement said so, not because it seemed nice. The
+[recorded baseline](docs/baseline-2026-08-16.json) — four films, four genres,
+three countries — found 100% of candidates traceable to a real search result and
+**every single unusable one rejected for a missing entry fee**: no stale
+deadlines, no missing deadlines, nothing else. Fees live on the submission page,
+not in a search snippet, so the pipeline goes and reads the page.
 
 ### The model researches; Python decides
 
@@ -90,7 +98,9 @@ adk web
 
 - [x] Wk 1 — ADK pipeline + Parallel **Search** scout, deterministic strategy engine, offline fixture, 30 tests
 - [ ] Wk 2 — live-research validation: harness + rubric + 4-profile suite built (78 tests); **awaiting live keys to produce the verdict**
-  - [ ] **Verify stage on Parallel's Extract API**, if the baseline report earns it. Search returns excerpts, so the scout infers deadlines and fees from snippets — which is exactly what `missing_deadline` / `missing_fee` in the audit measure. If those dominate the set-aside counts, Extract pulls the actual submission-rules page and confirms the number before the planner trusts it. Re-run the same suite afterwards for a measured before/after rather than an unexplained new stage.
+  - [x] Baseline recorded — [docs/baseline-2026-08-16.json](docs/baseline-2026-08-16.json). 44 candidates, 25 usable, 100% grounded, and all 19 rejections are missing fees
+  - [x] **Verify stage on Parallel's Extract API** built — the baseline earned it. The audit now reports `fees_recovered` / `deadlines_recovered` so the stage has to prove its keep
+  - [ ] Re-run the suite for the measured before/after
   - [ ] Persistence (Firestore)
 - [ ] Wk 3 — web dashboard (submission kanban, deadline calendar) on Cloud Run; migrate `SequentialAgent` → ADK `Workflow` graph, using conditional routing to re-scout when the research yields too few usable candidates
   - [ ] **Deadline watch on Parallel's Monitor API** — festival deadlines shift, extensions get announced, fee waivers appear. Watching each planned festival's submission page turns a one-shot plan into a living pipeline and gives the kanban something to react to. This is also the stage that ports back to RelayOps as follow-up triggers.
