@@ -1,0 +1,22 @@
+# Secrets first, and deliberately. The container receives PARALLEL_API_KEY and
+# the Vertex settings from the Cloud Run service config; a .env baked into a
+# layer would ship the key to anyone who can pull the image.
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Not needed at runtime: the harness, its reports, and the test suite.
+tests/
+validation/
+docs/
+requirements-dev.txt
+README.md
+LICENSE
