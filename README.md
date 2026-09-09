@@ -97,10 +97,11 @@ adk web
 ## Roadmap (hackathon)
 
 - [x] Wk 1 — ADK pipeline + Parallel **Search** scout, deterministic strategy engine, offline fixture, 30 tests
-- [ ] Wk 2 — live-research validation: harness + rubric + 4-profile suite built (78 tests); **awaiting live keys to produce the verdict**
+- [ ] Wk 2 — live-research validation: harness + rubric + 4-profile suite built (78 tests); **measured verdict: MARGINAL**
   - [x] Baseline recorded — [docs/baseline-2026-08-16.json](docs/baseline-2026-08-16.json). 44 candidates, 25 usable, 100% grounded, and all 19 rejections are missing fees
   - [x] **Verify stage on Parallel's Extract API** built — the baseline earned it. The audit now reports `fees_recovered` / `deadlines_recovered` so the stage has to prove its keep
-  - [ ] Re-run the suite for the measured before/after
+  - [x] Re-run the suite for the measured before/after — [docs/suite-2026-09-09.json](docs/suite-2026-09-09.json). **NO-GO → MARGINAL**: usable rate 57% → 70% (37 of 53 candidates), groundedness held at 100% (53/53, every source URL an exact match)
+  - [ ] Reach-tier coverage is the binding constraint now, not yield — 0–1 reach festivals against a minimum of 2 on all four profiles. Reach festivals never publish a fee in a search snippet, and the verify stage extracted only 3 of the 16 null-fee candidates it was handed
   - [ ] Persistence (Firestore)
 - [ ] Wk 3 — web dashboard (submission kanban, deadline calendar) on Cloud Run; migrate `SequentialAgent` → ADK `Workflow` graph, using conditional routing to re-scout when the research yields too few usable candidates
   - [ ] **Deadline watch on Parallel's Monitor API** — festival deadlines shift, extensions get announced, fee waivers appear. Watching each planned festival's submission page turns a one-shot plan into a living pipeline and gives the kanban something to react to. This is also the stage that ports back to RelayOps as follow-up triggers.
