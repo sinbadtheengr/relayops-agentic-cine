@@ -160,6 +160,22 @@ def check_environment(allow_offline: bool) -> str | None:
     return None
 
 
+def use_utf8_console() -> None:
+    """Print festival names without dying on the Windows console.
+
+    The default Windows code page is cp1252, which cannot encode the arrow in
+    the tool-call line -- so the run died with UnicodeEncodeError at the exact
+    moment the scout first called Parallel, and international festival names
+    ("Lumiere", "Clermont-Ferrand") came out as mojibake. errors="replace"
+    means a console that still cannot render a glyph degrades instead of
+    taking the pipeline down with it.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 async def main_async(args: argparse.Namespace) -> int:
     problem = check_environment(args.allow_offline)
     if problem:
@@ -251,6 +267,7 @@ async def main_async(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
+    use_utf8_console()
     parser = argparse.ArgumentParser(
         description="Grade live festival research quality (Week 2 go/no-go)."
     )

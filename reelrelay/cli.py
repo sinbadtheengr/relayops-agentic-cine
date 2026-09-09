@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import pathlib
+import sys
 
 from dotenv import load_dotenv
 
@@ -12,6 +13,22 @@ from google.adk.runners import InMemoryRunner  # noqa: E402  (needs env loaded f
 from google.genai import types  # noqa: E402
 
 from .agent import root_agent  # noqa: E402
+
+
+def use_utf8_console() -> None:
+    """Print festival names without dying on the Windows console.
+
+    The default Windows code page is cp1252, which cannot encode the arrow in
+    the tool-call line -- so the run died with UnicodeEncodeError at the exact
+    moment the scout first called Parallel, and international festival names
+    ("Lumiere", "Clermont-Ferrand") came out as mojibake. errors="replace"
+    means a console that still cannot render a glyph degrades instead of
+    taking the pipeline down with it.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
 
 
 async def run_pipeline(profile_text: str) -> None:
@@ -39,6 +56,7 @@ async def run_pipeline(profile_text: str) -> None:
 
 
 def main() -> None:
+    use_utf8_console()
     parser = argparse.ArgumentParser(description="Run the ReelRelay pipeline once.")
     parser.add_argument(
         "--profile",
